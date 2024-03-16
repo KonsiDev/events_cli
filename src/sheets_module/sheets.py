@@ -4,12 +4,13 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from pkg_resources import resource_filename
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 # The ID and range of a sample spreadsheet.
-SPREADSHEET_ID = '11v2Dd4rG4E8uXnxZWXK5ZXfwwljX7xkLp_iRXdur2To'
+SPREADSHEET_ID = '1Ue1Dwcl2Tco4eIZI8DzCeQh7bhtvFIaumkb-X0YerJk'
 RANGE_NAME = 'Eventos!A1:H'
 
 class EventSheets:
@@ -25,8 +26,9 @@ class EventSheets:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
+                secrets_file = resource_filename('src', 'client_secret.json')
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    'client_secret.json', SCOPES)
+                    secrets_file, SCOPES)
                 creds = flow.run_local_server(port=0, success_message='Autenticado com sucesso, pode fechar esta aba.')
             # Save the credentials for the next run
             with open('token.json', 'w') as token:
@@ -42,8 +44,7 @@ class EventSheets:
         result = self.sheet.values().get(spreadsheetId=SPREADSHEET_ID,range=RANGE_NAME).execute()
         values = result.get('values', [])
         if not values:
-            #echo no values found
-            print('echo')
+            print('Tabela não encontrada')
         new_events = []
         for event in events:
             if all(event[0] not in row[0] for row in values):
@@ -53,8 +54,3 @@ class EventSheets:
             self.sheet.values().update(spreadsheetId= SPREADSHEET_ID, range=f'Eventos!A{new_events_index}:H', valueInputOption='USER_ENTERED', body = {'values': new_events}).execute()
         else:
             print ('sem novos eventos')
-
-if __name__ == '__main__':
-    sheets = EventSheets()
-    sheets.set_credentials()
-    sheets.add_new_events([])

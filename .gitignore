@@ -1,3 +1,5 @@
 /venv
 client_secret.json
 token.json
+/dist
+/Events_CLI**
