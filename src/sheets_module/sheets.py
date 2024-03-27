@@ -4,7 +4,8 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from pkg_resources import resource_filename
+from importlib_resources import files
+from termcolor import colored
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -26,9 +27,10 @@ class EventSheets:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
-                secrets_file = resource_filename('src', 'client_secret.json')
+                # secrets_file = resource_filename('src', 'client_secret.json')
+                secrets_file = files('src')/'client_secret.json'
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    secrets_file, SCOPES)
+                    str(secrets_file), SCOPES)
                 creds = flow.run_local_server(port=0, success_message='Autenticado com sucesso, pode fechar esta aba.')
             # Save the credentials for the next run
             with open('token.json', 'w') as token:
@@ -44,13 +46,15 @@ class EventSheets:
         result = self.sheet.values().get(spreadsheetId=SPREADSHEET_ID,range=RANGE_NAME).execute()
         values = result.get('values', [])
         if not values:
-            print('Tabela não encontrada')
+            print(colored('Tabela não encontrada', 'red'))
         new_events = []
         for event in events:
             if all(event[0] not in row[0] for row in values):
                 new_events.append(event)
         if len(new_events) != 0:
             new_events_index = len(values)+1
-            self.sheet.values().update(spreadsheetId= SPREADSHEET_ID, range=f'Eventos!A{new_events_index}:H', valueInputOption='USER_ENTERED', body = {'values': new_events}).execute()
+            last_index = new_events_index + (len(new_events)-1)
+            self.sheet.values().update(spreadsheetId= SPREADSHEET_ID, range=f'Eventos!A{new_events_index}:I', valueInputOption='USER_ENTERED', body = {'values': new_events}).execute()
+            print(colored(f'Adicionados eventos do index {new_events_index} ao {last_index}', 'green'))
         else:
-            print ('sem novos eventos')
+            print (colored('sem novos eventos', 'light_red'))

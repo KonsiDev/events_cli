@@ -36,14 +36,14 @@ def execute():
                     event_type = 'Click'
                 if 'opened' in descripted_event:
                     event_type = 'View'
-                formatted_events.append([descripted_event, '', event_type, description, '', '', '', 'Em desenvolvimento'])
+                formatted_events.append([descripted_event,'', '', event_type, description, '', '', '', 'Em desenvolvimento'])
             else:
                 if 'click' in event:
                     event_type = 'Click'
                 if 'opened' in event:
                     event_type = 'View'
                 if all(event not in new_events[0]for new_events in formatted_events):
-                    formatted_events.append([event, '', event_type, description, '', '', '', 'Em desenvolvimento'])
+                    formatted_events.append([event,'', '', event_type, description, '', '', '', 'Em desenvolvimento'])
 
 
     sheets.add_new_events(formatted_events)
