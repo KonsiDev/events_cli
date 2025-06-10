@@ -1,0 +1,27 @@
+# action.yml
+
+name: 'Update Google Sheet From Dart Events'
+description: 'Parses a events.dart file and updates a Google Sheet.'
+
+inputs:
+  events_file_path:
+    description: 'Path to the events.dart file inside the project repository'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install Dependencies
+      shell: bash
+      run: |
+        pip install -r ${{ github.action_path }}/requirements.txt
+
+    - name: Run Python Script
+      shell: bash
+      run: |
+        python ${{ github.action_path }}/events_to_table.py --file-path ${{ inputs.events_file_path }}

@@ -1,27 +1,23 @@
-#ler o diretorio do app e encontrar a pasta events.dart
-# ler o arquivo e pegar apenas o nome dos eventos (talvez uma descrição)
-#Editar a planilha do google sheets
-#path C:\Users\andre\Documents\Projetos Flutter\konsi-app
-
 from argparse import ArgumentParser
-from .sheets_module.sheets import EventSheets
+from .sheets import EventSheets
 import os
-#ler caminho do argumento
+
 def execute():
     parser = ArgumentParser()
-    parser.add_argument('--p', action='store', dest='path', help='Para pegar o caminho do arquivo "events.dart", usar pwd no código do app', required = True)
+    parser.add_argument('--file-path', dest='file_path', help='Caminho para o arquivo events.dart', required=True)
     arguments = parser.parse_args()
+
     sheets = EventSheets()
 
-    os.chdir(arguments.path)
-    os.chdir('Konsi/lib/src/core/enumerators/analytics')
-    # print(os.listdir(os.getcwd()))
+    if not os.path.exists(arguments.file_path):
+        print(f"Erro: O arquivo em '{arguments.file_path}' não foi encontrado.")
+        return
 
     #get events list
-    with open('events.dart', 'r')as events_file:
+    with open(arguments.file_path, 'r') as events_file:
         fileLines = events_file.readlines()
         events_start_index = fileLines.index('enum Events {\n')
-        events_end_index = fileLines.index('}\n')#final do enum events
+        events_end_index = fileLines.index('}\n')
         events = [line for line in fileLines if fileLines.index(line) > events_start_index and fileLines.index(line) < events_end_index]
         events = [event.lstrip().replace('\n', '').replace(',', '') for event in events]
         events = [event.split ('//TODO', 1)[0] for event in events]
