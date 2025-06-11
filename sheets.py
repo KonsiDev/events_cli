@@ -8,7 +8,7 @@ from termcolor import colored
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 SPREADSHEET_ID = os.environ.get('SPREADSHEET_ID')
-RANGE_NAME = 'Eventos!A1:H'
+RANGE_NAME = 'Eventos!A:I'
 
 class EventSheets:
     def __init__(self) -> None:
@@ -30,19 +30,58 @@ class EventSheets:
         return service.spreadsheets()
     
     def add_new_events(self, events: list):
+        try:
+            result = self.sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=RANGE_NAME).execute()
+            existing_values = result.get('values', [])
+        except Exception as e:
+            print(colored(f"Erro ao acessar a planilha: {e}", "red"))
+            return
 
-        result = self.sheet.values().get(spreadsheetId=SPREADSHEET_ID,range=RANGE_NAME).execute()
-        values = result.get('values', [])
-        if not values:
-            print(colored('Tabela não encontrada', 'red'))
-        new_events = []
+        existing_events_map = {row[0]: {'row_index': i + 1, 'data': row} for i, row in enumerate(existing_values) if row}
+
+        new_events_to_add = []
+        events_to_update = []
+
         for event in events:
-            if all(event[0] not in row[0] for row in values):
-                new_events.append(event)
-        if len(new_events) != 0:
-            new_events_index = len(values)+1
-            last_index = new_events_index + (len(new_events)-1)
-            self.sheet.values().update(spreadsheetId= SPREADSHEET_ID, range=f'Eventos!A{new_events_index}:I', valueInputOption='USER_ENTERED', body = {'values': new_events}).execute()
-            print(colored(f'Adicionados eventos do index {new_events_index} ao {last_index}', 'green'))
+            event_name = event[0]
+            new_description = event[4]
+
+            if event_name in existing_events_map:
+                existing_event = existing_events_map[event_name]
+                row_data = existing_event['data']
+                row_index = existing_event['row_index']
+
+                has_current_description = len(row_data) > 4 and row_data[4].strip()
+                has_new_description = new_description.strip()
+
+                if not has_current_description and has_new_description:
+                    update_range = f'Eventos!E{row_index}'
+                    events_to_update.append({'range': update_range, 'description': new_description, 'name': event_name})
+            else:
+                new_events_to_add.append(event)
+
+        if events_to_update:
+            print(colored(f"Encontradas {len(events_to_update)} descrições para atualizar...", 'yellow'))
+            for item in events_to_update:
+                self.sheet.values().update(
+                    spreadsheetId=SPREADSHEET_ID,
+                    range=item['range'],
+                    valueInputOption='USER_ENTERED',
+                    body={'values': [[item['description']]]}
+                ).execute()
+                print(colored(f"  ✓ Descrição do evento '{item['name']}' atualizada na célula {item['range']}", 'cyan'))
         else:
-            print (colored('sem novos eventos', 'light_red'))
+            print(colored("Nenhuma descrição para atualizar.", 'yellow'))
+            
+        if new_events_to_add:
+            print(colored(f"Adicionando {len(new_events_to_add)} novos eventos...", 'green'))
+            self.sheet.values().append(
+                spreadsheetId=SPREADSHEET_ID,
+                range=RANGE_NAME,
+                valueInputOption='USER_ENTERED',
+                insertDataOption='INSERT_ROWS',
+                body={'values': new_events_to_add}
+            ).execute()
+            print(colored(f'  ✓ Novos eventos adicionados com sucesso!', 'green'))
+        else:
+            print(colored('Nenhum evento novo para adicionar.', 'light_red'))
