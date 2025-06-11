@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from .sheets import EventSheets
+from sheets import EventSheets
 import os
 
 def execute():
